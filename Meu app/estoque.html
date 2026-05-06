@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 Estoque em Casa</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #45a049;
+            --danger: #f44336;
+            --danger-dark: #d32f2f;
+            --bg: #f4f7f6;
+            --text: #333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        
+        /* Classes utilitárias */
+        .hidden { display: none !important; }
+        .container { max-width: 800px; width: 100%; margin: 0 auto; }
+        
+        /* Estilos de Login e Cadastro */
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 350px;
+            margin: 50px auto;
+            text-align: center;
+        }
+        .auth-card h2 { color: var(--primary); margin-top: 0; }
+        .auth-card input {
+            width: 100%; box-sizing: border-box; margin-bottom: 15px;
+            padding: 10px; border: 1px solid #ccc; border-radius: 4px;
+        }
+        .auth-card button { width: 100%; }
+        .small-link {
+            font-size: 0.9em; margin-top: 15px; color: #666;
+        }
+        .small-link a { color: var(--primary); text-decoration: none; font-weight: bold; cursor: pointer; }
+        .small-link a:hover { text-decoration: underline; }
+
+        /* Estilos do Estoque (Dashboard) */
+        .header-estoque { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;}
+        .header-estoque h1 { margin: 0; color: var(--primary); }
+        .btn-logout { background-color: #607d8b; padding: 8px 15px; }
+        .btn-logout:hover { background-color: #455a64; }
+
+        .form-container {
+            background: white; padding: 20px; border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;
+            display: flex; gap: 10px; flex-wrap: wrap;
+        }
+        .form-container input {
+            flex: 1; padding: 10px; border: 1px solid #ccc;
+            border-radius: 4px; min-width: 150px;
+        }
+        button {
+            padding: 10px 20px; background-color: var(--primary); color: white;
+            border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: background 0.3s;
+        }
+        button:hover { background-color: var(--primary-dark); }
+        
+        .btn-delete { background-color: var(--danger); padding: 5px 10px; font-size: 0.9em; margin-left: 5px; }
+        .btn-delete:hover { background-color: var(--danger-dark); }
+        .btn-sell { background-color: #2196F3; padding: 5px 10px; font-size: 0.9em; }
+        .btn-sell:hover { background-color: #0b7dda; }
+        
+        table {
+            width: 100%; border-collapse: collapse; background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;
+        }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: var(--primary); color: white; }
+        
+        .warning { color: var(--danger); font-weight: bold; background-color: #ffebee; padding: 5px 10px; border-radius: 4px; display: inline-block; }
+        .ok { color: var(--primary); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="telaLogin" class="auth-card">
+        <h2>📦 Entrar no Estoque</h2>
+        <input type="text" id="loginUsuario" placeholder="Nome de usuário">
+        <input type="password" id="loginSenha" placeholder="Senha">
+        <button onclick="fazerLogin()">Entrar</button>
+        <p class="small-link">Não tem uma conta? <a onclick="mostrarTela('telaCadastro')">cadastrar-se</a></p>
+    </div>
+
+    <div id="telaCadastro" class="auth-card hidden">
+        <h2>Criar Conta</h2>
+        <input type="text" id="cadUsuario" placeholder="Escolha um nome de usuário">
+        <input type="password" id="cadSenha" placeholder="Crie uma senha">
+        <button onclick="fazerCadastro()">Cadastrar</button>
+        <p class="small-link">Já possui conta? <a onclick="mostrarTela('telaLogin')">Fazer login</a></p>
+    </div>
+
+    <div id="telaEstoque" class="container hidden">
+        <div class="header-estoque">
+            <h1>📦 Meu Estoque em Casa</h1>
+            <div>
+                <span id="nomeUsuarioLogado" style="margin-right: 15px; font-weight: bold;"></span>
+                <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <input type="text" id="nomeItem" placeholder="Nome do Item (ex: Sabão)" required>
+            <input type="number" id="precoItem" placeholder="Preço (R$)" step="0.01" required>
+            <input type="number" id="qtdItem" placeholder="Quantidade" required>
+            <button onclick="adicionarItem()">Adicionar Item</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Preço (R$)</th>
+                    <th>Estoque</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="listaEstoque">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        // ================= BANCO DE DADOS (LOCALSTORAGE) =================
+        let usuariosDB = JSON.parse(localStorage.getItem('usuariosCadastrados')) || [];
+        let usuarioAtual = localStorage.getItem('usuarioLogado');
+        let estoque = [];
+
+        // ================= NAVEGAÇÃO DE TELAS =================
+        function mostrarTela(idTela) {
+            document.getElementById('telaLogin').classList.add('hidden');
+            document.getElementById('telaCadastro').classList.add('hidden');
+            document.getElementById('telaEstoque').classList.add('hidden');
+            document.getElementById(idTela).classList.remove('hidden');
+        }
+
+        function verificarSessao() {
+            if (usuarioAtual) {
+                document.getElementById('nomeUsuarioLogado').innerText = 'Olá, ' + usuarioAtual;
+                carregarBancoEstoque();
+                mostrarTela('telaEstoque');
+            } else {
+                mostrarTela('telaLogin');
+            }
+        }
+
+        // ================= SISTEMA DE AUTENTICAÇÃO =================
+        function fazerCadastro() {
+            const usuario = document.getElementById('cadUsuario').value.trim();
+            const senha = document.getElementById('cadSenha').value.trim();
+
+            if (!usuario || !senha) {
+                alert('Preencha usuário e senha!');
+                return;
+            }
+
+            // Verifica se o usuário já existe
+            const usuarioExiste = usuariosDB.find(u => u.usuario === usuario);
+            if (usuarioExiste) {
+                alert('Este nome de usuário já está em uso!');
+                return;
+            }
+
+            // Salva no banco de usuários
+            usuariosDB.push({ usuario: usuario, senha: senha });
+            localStorage.setItem('usuariosCadastrados', JSON.stringify(usuariosDB));
+            
+            alert('Conta criada com sucesso! Faça login.');
+            document.getElementById('cadUsuario').value = '';
+            document.getElementById('cadSenha').value = '';
+            mostrarTela('telaLogin');
+        }
+
+        function fazerLogin() {
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const senha = document.getElementById('loginSenha').value.trim();
+
+            const conta = usuariosDB.find(u => u.usuario === usuario && u.senha === senha);
+
+            if (conta) {
+                usuarioAtual = conta.usuario;
+                localStorage.setItem('usuarioLogado', usuarioAtual);
+                document.getElementById('loginUsuario').value = '';
+                document.getElementById('loginSenha').value = '';
+                verificarSessao();
+            } else {
+                alert('Usuário ou senha incorretos!');
+            }
+        }
+
+        function fazerLogout() {
+            usuarioAtual = null;
+            localStorage.removeItem('usuarioLogado');
+            estoque = []; // Limpa os dados visíveis
+            verificarSessao();
+        }
+
+        // ================= SISTEMA DE ESTOQUE (POR USUÁRIO) =================
+        function getChaveEstoque() {
+            return `estoque_${usuarioAtual}`; // Chave única para cada usuário
+        }
+
+        function carregarBancoEstoque() {
+            const dadosSalvos = localStorage.getItem(getChaveEstoque());
+            if (dadosSalvos) {
+                estoque = JSON.parse(dadosSalvos);
+            } else {
+                estoque = [];
+            }
+            atualizarTelaEstoque();
+        }
+
+        function salvarBancoEstoque() {
+            localStorage.setItem(getChaveEstoque(), JSON.stringify(estoque));
+        }
+
+        function adicionarItem() {
+            const nome = document.getElementById('nomeItem').value;
+            const preco = parseFloat(document.getElementById('precoItem').value);
+            const qtd = parseInt(document.getElementById('qtdItem').value);
+
+            if (nome === '' || isNaN(preco) || isNaN(qtd)) {
+                alert('Por favor, preencha todos os campos corretamente!');
+                return;
+            }
+
+            estoque.push({ nome: nome, preco: preco, quantidade: qtd });
+            
+            document.getElementById('nomeItem').value = '';
+            document.getElementById('precoItem').value = '';
+            document.getElementById('qtdItem').value = '';
+
+            salvarBancoEstoque();
+            atualizarTelaEstoque();
+        }
+
+        function venderItem(index) {
+            if (estoque[index].quantidade > 0) {
+                estoque[index].quantidade -= 1;
+                salvarBancoEstoque();
+                atualizarTelaEstoque();
+            } else {
+                alert('Este item já acabou totalmente!');
+            }
+        }
+
+        function excluirItem(index) {
+            if (confirm("Tem certeza que deseja apagar este item do estoque?")) {
+                estoque.splice(index, 1);
+                salvarBancoEstoque();
+                atualizarTelaEstoque();
+            }
+        }
+
+        function atualizarTelaEstoque() {
+            const lista = document.getElementById('listaEstoque');
+            lista.innerHTML = ''; 
+
+            estoque.forEach((item, index) => {
+                let statusHtml = item.quantidade < 5 
+                    ? '<span class="warning">⚠️ Esgotando!</span>' 
+                    : '<span class="ok">✅ OK</span>';
+
+                const precoFormatado = item.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${item.nome}</strong></td>
+                    <td>${precoFormatado}</td>
+                    <td>${item.quantidade} unid.</td>
+                    <td>${statusHtml}</td>
+                    <td>
+                        <button class="btn-sell" onclick="venderItem(${index})">Vender 1</button>
+                        <button class="btn-delete" onclick="excluirItem(${index})">Excluir</button>
+                    </td>
+                `;
+                lista.appendChild(tr);
+            });
+        }
+
+        // Inicia checando se alguém já está logado
+        verificarSessao();
+    </script>
+
+</body>
+</html>
